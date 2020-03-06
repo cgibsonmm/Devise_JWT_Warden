@@ -119,3 +119,56 @@ end
 ```
 
 for now lets leave this alone, if you want to add more values just check out the Devise documentation.
+
+`$ rails db:migrate`
+
+---
+
+At this point we need to set up our API with rack-cors and and we need to build our Devise Strategy to use Warden and JWT
+
+`./config/initializers/devise.rb`
+
+```ruby
+
+## around line 268 ##
+
+# ==> Warden configuration
+  # If you want to use other strategies, that are not supported by Devise, or
+  # change the failure app, you can configure them inside the config.warden block.
+  #
+  config.warden do |manager|
+    # manager.intercept_401 = false
+    manager.strategies.add :jwt, Devise::Strategies::JWT
+    manager.default_strategies(scope: :user).unshift :jwt
+  end
+```
+
+And at the end of the file we can place this code
+
+```ruby
+### Taking from GoRails.com ###
+ module Devise
+  module Strategies
+    class JWT < Base
+      def valid?
+        request.headers['Authorization'].present?
+      end
+
+      def authenticate!
+        token = request.headers.fetch('Authorization', '').split(' ').last
+        payload = JsonWebToken.decode(token)
+        success! User.find(payload['sub'])
+      rescue ::JWT::ExpiredSignature
+        fail! 'Auth token has expired'
+      rescue ::JWT::DecodeError
+        fail! 'Auth token is invalid'
+      end
+    end
+  end
+end
+end
+```
+
+that is a the configuration we have to handle now we need to add a few controllers and end points
+
+---
