@@ -291,6 +291,22 @@ class Api::V1::PostController < ApiController
 end
 ```
 
+And we still need to build the JsonWebToken class we can do that in our models' folder
+`$ touch ./app/models/json_web_token.rb`
+
+```ruby
+class JsonWebToken
+  def self.encode(payload)
+    expiration = 2.weeks.from_now.to_i
+    JWT.encode payload.merge(exp: expiration), Rails.application.credentials.fetch(:secret_key_base)
+  end
+
+  def self.decode(token)
+    JWT.decode(token, Rails.application.credentials.fetch(:secret_key_base)).first
+  end
+end
+```
+
 At this point, if we have the rails server running, we can pass a GET request to the API and see what happens. In Postman I sent a GET request to `http://localhost:3000/api/v1/post/index`
 
 If everything is working correctly, we will get the response of
@@ -333,22 +349,6 @@ class Api::V1::AuthenticationController < ApiController
 
   def fetch
     render json: current_user
-  end
-end
-```
-
-And we still need to build the JsonWebToken class we can do that in our models' folder
-`$ touch ./app/models/json_web_token.rb`
-
-```ruby
-class JsonWebToken
-  def self.encode(payload)
-    expiration = 2.weeks.from_now.to_i
-    JWT.encode payload.merge(exp: expiration), Rails.application.credentials.fetch(:secret_key_base)
-  end
-
-  def self.decode(token)
-    JWT.decode(token, Rails.application.credentials.fetch(:secret_key_base)).first
   end
 end
 ```
