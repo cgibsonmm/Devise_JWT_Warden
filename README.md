@@ -189,7 +189,6 @@ And at the end of the file, we can place this code.
     end
   end
 end
-end
 ```
 
 That is all the configuration we have to handle for now. Let's just add a few controllers and API endpoints.
