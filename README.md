@@ -126,6 +126,27 @@ for now lets leave this alone, if you want to add more values just check out the
 
 At this point we need to set up our API with rack-cors and and we need to build our Devise Strategy to use Warden and JWT
 
+`./config/initializers/cors.rb`
+
+```ruby
+# Be sure to restart your server when you modify this file.
+
+# Avoid CORS issues when API is called from the frontend app.
+# Handle Cross-Origin Resource Sharing (CORS) in order to accept cross-origin AJAX requests.
+
+# Read more: https://github.com/cyu/rack-cors
+
+Rails.application.config.middleware.insert_before 0, Rack::Cors do
+  allow do
+    origins '*'
+
+    resource '*',
+             headers: :any,
+             methods: %i[get post put patch delete options head]
+  end
+end
+```
+
 `./config/initializers/devise.rb`
 
 ```ruby
@@ -169,6 +190,44 @@ end
 end
 ```
 
-that is a the configuration we have to handle now we need to add a few controllers and end points
+that is a the configuration we have to handle now we need to add a few controllers and end points.
 
 ---
+
+we can start `$ rails s` and make sure there is no errors
+
+lets configure the routes that the basic api will have
+
+`./config/routes.rb`
+
+```ruby
+Rails.application.routes.draw do
+  devise_for :users, controllers: { registrations: 'registrations' }
+  namespace :api do
+    namespace :v1 do
+      get 'post/index'
+      post :auth, to: 'authentication#create'
+      get  '/auth' => 'authentication#fetch'
+    end
+
+    namespace :v2 do
+      # Things yet to come
+    end
+  end
+end
+```
+
+The line `devise_for` build a bunch of devise end points most of which we will not use but reference the Devise docs for more information.
+
+And name spacing allows allows us to version our API without errors.
+
+Now to configure `./app/controllers/application_controller.rb`
+
+```ruby
+class ApplicationController < ActionController::Base
+  skip_before_action :verify_authenticity_token
+end
+```
+
+We need to modify this class to inherit from ActionController::Base instead of ::API due to Devise
+and since we did that Rails now expects all requests to come from special Rails forms the have built in Auth tokens, so we need to skip that check app wide
