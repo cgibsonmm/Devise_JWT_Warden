@@ -232,4 +232,75 @@ end
 ```
 
 We need to modify this class to inherit from ActionController::Base instead of ::API due to Devise
-and since we did that Rails now expects all requests to come from special Rails forms the have built in Auth tokens, so we need to skip that check app wide
+and since we did that Rails now expects all requests to come from special Rails forms the have built in Auth tokens, so we need to skip that check app wide.
+
+Since we are not are using ::Base we can make our own API controller that the rest of our app can inherit from.
+
+`$ touch ./app/controllers/api_controller.rb`
+
+```ruby
+class ApiController < ApplicationController
+  before_action :set_default_format
+  before_action :authenticate_user!
+
+  private
+
+  def set_default_format
+    request.format = :json
+  end
+end
+```
+
+This file set our default response to JSON, and I personally chose to lock every end point in our API behind the fact the user is logged in.
+
+We also need to build a RegistrationController that will be used to register new users to out site. I build it this way for a few workarounds for Devise.
+
+`$ touch ./app/controllers/registrations_controller.rb`
+
+```ruby
+class RegistrationsController < Devise::RegistrationsController
+  respond_to :json
+
+  def create
+    @user = User.new(sign_up_params)
+    if @user.save
+      render json: @user
+    else
+      render json: { errors: @user.errors }
+    end
+  end
+
+  private
+
+  def sign_up_params
+    params.permit(:email, :password, :password_confirmation)
+  end
+end
+```
+
+Now we can build the controllers inside our API
+`$ touch ./app/controllers/api/v1/post_controller.rb`
+
+```ruby
+class Api::V1::PostController < ApiController
+  before_action :authenticate_user!
+
+  def index
+    puts current_user.email
+    render json: { user: current_user.email, list: [1, 2, 3] }
+  end
+end
+```
+
+At this point if we have the rails server running we can pass a GET request to the api and see what happens. In Postman I sent a GET request to `http://localhost:3000/api/v1/post/index`
+
+If everything is working correctly we will get the response of
+
+```Json
+{
+    "error": "You need to sign in or sign up before continuing."
+}
+```
+
+If this works you have everything but the last piece of the puzzle working!
+The only thing left would be to create a User and then sign in with them, which will return a JWT back that you can then place in LocalStorage in your front-end application.
