@@ -396,4 +396,6 @@ and this will return your JWT
 }
 ```
 
+![Postman](./logo/Postman.png)
+
 Save this in Local Storage and make sure to pass this token in your headers every time you make an axios request. If there is any place you do not need a user to be signed in just throw `skip_before_action :authenticate_user!, only: [:action_to_skip_here]`
