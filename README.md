@@ -304,3 +304,96 @@ If everything is working correctly we will get the response of
 
 If this works you have everything but the last piece of the puzzle working!
 The only thing left would be to create a User and then sign in with them, which will return a JWT back that you can then place in LocalStorage in your front-end application.
+
+---
+
+We still need to create a last controller that will handle the two routes we placed in our routes file.
+
+```ruby
+post :auth, to: 'authentication#create'
+get  '/auth' => 'authentication#fetch'
+```
+
+the first will allow the user to sign in,
+and the second will return all of the current signed in user. Maybe for a user profile page.
+
+`$ touch ./app/controller/api/v1/authentication_controller.rb`
+
+```ruby
+class Api::V1::AuthenticationController < ApiController
+  skip_before_action :authenticate_user!, only: [:create]
+  def create
+    user = User.find_by(email: params[:email])
+    puts user
+    if user&.valid_password?(params[:password])
+      render json: { token: JsonWebToken.encode(sub: user.id) }
+    else
+      render json: { errors: 'invalid' }
+    end
+  end
+
+  def fetch
+    render json: current_user
+  end
+end
+```
+
+And we still need to build the JsonWebToken class we can do that in our models folder
+`$ touch ./app/models/json_web_token.rb`
+
+```ruby
+class JsonWebToken
+  def self.encode(payload)
+    expiration = 2.weeks.from_now.to_i
+    JWT.encode payload.merge(exp: expiration), Rails.application.credentials.fetch(:secret_key_base)
+  end
+
+  def self.decode(token)
+    JWT.decode(token, Rails.application.credentials.fetch(:secret_key_base)).first
+  end
+end
+```
+
+Okay, That's it. let's test everything out.
+
+first in Postman we can create a user
+POST to `http://localhost:3000/users`
+
+```json
+{
+  "email": "test@email.com",
+  "password": "1234567"
+}
+```
+
+this should return a new user
+
+```json
+{
+  "id": 4,
+  "email": "test@email.com",
+  "created_at": "2020-03-06T13:35:05.903Z",
+  "updated_at": "2020-03-06T13:35:05.903Z"
+}
+```
+
+I set this up so that once a user signs up they will see need to sign in. This is great to have if you want a user to confirm their email.
+
+So now we send a POST to `http://localhost:3000/api/v1/auth` with the users email and password
+
+```json
+{
+  "email": "test@email.com",
+  "password": "1234567"
+}
+```
+
+and this will return your JWT
+
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOjQsImV4cCI6MTU4NDcxMTQ1M30.nbN-8A964zmM4PnDj8DuioqhSYWmBAF-Sj2Uhppim2E"
+}
+```
+
+Save this in Local Storage and make sure to pass this token in your headers every time you make an axios request. If there is any place you do not need a user to be signed in just throw `skip_before_action :authenticate_user!, only: [:action_to_skip_here]`
