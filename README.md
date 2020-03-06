@@ -1,5 +1,7 @@
 # Devise_JWT_Warden
 
+![lock](./logo/lock.png)
+
 ## Devise with a Rails API
 
 ### Objectives
