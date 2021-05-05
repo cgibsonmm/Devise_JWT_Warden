@@ -8,7 +8,7 @@
 
 - Build an easy to use full-featured option to handle User Auth with a Rails API
 
-`$ rails new devise_auth_app --api`
+`$ rails new devise_auth_app --api --database=postgresql`
 
 Once everything is installed move into the rails project`cd devise_auth_app`
 
